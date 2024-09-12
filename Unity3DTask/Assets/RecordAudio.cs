@@ -21,6 +21,12 @@ public class RecordAudio : MonoBehaviour
     private string serverUrl = "https://xfojojrxiv9w43-5000.proxy.runpod.net";
     private string ssid = null;
 
+    [System.Serializable]
+    public class UploadResponse
+    {
+        public string ssid;
+    }
+
     private void Awake()
     {
         if (!Directory.Exists(directoryPath))
@@ -158,8 +164,9 @@ public class RecordAudio : MonoBehaviour
                 yield break;
             }
 
-            // Parse the response to get the ssid
-            ssid = www.downloadHandler.text;
+            // Parse the JSON response to get the ssid
+            UploadResponse uploadResponse = JsonUtility.FromJson<UploadResponse>(www.downloadHandler.text);
+            ssid = uploadResponse.ssid;
             Debug.Log("File uploaded successfully, SSID: " + ssid);
 
             // Start fetching response audio files
@@ -177,7 +184,8 @@ public class RecordAudio : MonoBehaviour
 
         while (processing && retryCount < maxRetries)
         {
-            string fetchUrl = serverUrl + "/fetch?ssid=" + ssid + "&index=" + index;
+            // Directly use ssid as a plain string
+            string fetchUrl = $"{serverUrl}/fetch?ssid={UnityWebRequest.EscapeURL(ssid)}&index={index}";
             Debug.Log("Fetching response audio with URL: " + fetchUrl);
 
             using (UnityWebRequest www = UnityWebRequest.Get(fetchUrl))
@@ -228,7 +236,6 @@ public class RecordAudio : MonoBehaviour
             Debug.Log("Finished fetching response files.");
         }
     }
-
 
     // Coroutine to play an audio file
     private IEnumerator PlayAudioFile(string filePath)
