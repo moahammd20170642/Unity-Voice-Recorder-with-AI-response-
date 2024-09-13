@@ -231,16 +231,21 @@ public class RecordAudio : MonoBehaviour
 
     private IEnumerator PlayQueuedAudio()
     {
+        int index = 0;
+
         while (audioFileQueue.Count > 0)
         {
             string filePath = audioFileQueue.Dequeue();
             Debug.Log("Attempting to load audio from: " + filePath);
 
+            // Determine the audio type based on the index
+            AudioType audioType = (index == 0) ? AudioType.WAV : AudioType.MPEG;
+
             // Play from StreamingAssets
             string fullPath = "file://" + filePath;  // Add file:// prefix for UnityWebRequest
             Debug.Log("Full path: " + fullPath);
 
-            using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(fullPath, AudioType.MPEG))
+            using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(fullPath, audioType))
             {
                 yield return www.SendWebRequest();
 
@@ -267,6 +272,9 @@ public class RecordAudio : MonoBehaviour
                     }
                 }
             }
+
+            index++;  // Increment the index for the next file
         }
     }
+
 }
