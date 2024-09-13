@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -17,6 +18,7 @@ public class RecordAudio : MonoBehaviour
     private const float silenceThreshold = 0.08f;
     private const float maxSilenceTime = 3f;
     private const int sampleWindow = 1024;
+    private Queue<string> audioFileQueue = new Queue<string>();
 
     private string serverUrl = "https://xfojojrxiv9w43-5000.proxy.runpod.net";
     private string ssid = null;
@@ -123,7 +125,7 @@ public class RecordAudio : MonoBehaviour
         if (recordedClip != null)
         {
             filePath = Path.Combine(directoryPath, filePath);
-            WavUtility.Save(filePath, recordedClip); // Assume WavUtility is a helper class for saving WAV files
+            WavUtility.Save(filePath, recordedClip);
             Debug.Log("Recording saved as " + filePath);
         }
         else
@@ -144,10 +146,8 @@ public class RecordAudio : MonoBehaviour
         return trimmedClip;
     }
 
-    // Coroutine to upload the recorded file and then fetch the response audio files
     private IEnumerator UploadAndFetchAudio(string filePath)
     {
-        // Upload the recorded audio file
         Debug.Log("Uploading the recorded file...");
 
         byte[] audioBytes = File.ReadAllBytes(filePath);
@@ -164,27 +164,21 @@ public class RecordAudio : MonoBehaviour
                 yield break;
             }
 
-            // Parse the JSON response to get the ssid
             UploadResponse uploadResponse = JsonUtility.FromJson<UploadResponse>(www.downloadHandler.text);
             ssid = uploadResponse.ssid;
             Debug.Log("File uploaded successfully, SSID: " + ssid);
 
-            // Start fetching response audio files
             StartCoroutine(FetchResponseAudio());
         }
     }
 
-    // Coroutine to fetch and play the response audio files
     private IEnumerator FetchResponseAudio()
     {
         int index = 0;
-        int maxRetries = 10; // Maximum number of retries
-        int retryCount = 0;
         bool processing = true;
 
-        while (processing && retryCount < maxRetries)
+        while (processing)
         {
-            // Directly use ssid as a plain string
             string fetchUrl = $"{serverUrl}/fetch?ssid={UnityWebRequest.EscapeURL(ssid)}&index={index}";
             Debug.Log("Fetching response audio with URL: " + fetchUrl);
 
@@ -192,69 +186,86 @@ public class RecordAudio : MonoBehaviour
             {
                 yield return www.SendWebRequest();
 
-                // Handle connection or protocol errors
                 if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError)
                 {
-                    Debug.LogError("Error fetching audio file: " + www.error);
-                    retryCount++;
-                    yield return new WaitForSeconds(5); // Wait 5 seconds before retrying
-                    continue;
+                    Debug.Log("Error fetching audio file: " + www.error);
+                    processing = false;
+                    break;
                 }
 
-                // If the server returns 404, wait and retry
                 if (www.responseCode == 404)
                 {
-                    Debug.Log("No response available yet, retrying... (" + retryCount + "/" + maxRetries + ")");
-                    retryCount++;
-                    yield return new WaitForSeconds(5); // Wait 5 seconds before retrying
-                    continue;
+                    Debug.Log("No more files available, starting to play audio...");
+                    processing = false;
+                    break;
                 }
 
-                // If we successfully get a response, save and play the audio
                 byte[] audioData = www.downloadHandler.data;
-                string responseFilePath = Path.Combine(directoryPath, "response_" + index + ".wav");
+
+                // Save the file to StreamingAssets folder
+                string responseFilePath = Path.Combine(Application.streamingAssetsPath, "response_" + index + ".wav");
                 File.WriteAllBytes(responseFilePath, audioData);
+
+                audioFileQueue.Enqueue(responseFilePath);
 
                 Debug.Log("Response file saved: " + responseFilePath);
 
-                // Load and play the audio file
-                StartCoroutine(PlayAudioFile(responseFilePath));
-
-                // Reset retry count and move to the next index
-                retryCount = 0;
                 index++;
-                yield return new WaitForSeconds(3); // Wait 3 seconds before fetching the next file
             }
         }
 
-        if (retryCount >= maxRetries)
+        if (audioFileQueue.Count > 0)
         {
-            Debug.LogError("Max retries reached. No more response files available.");
+            PlayAllFetchedAudio();
         }
         else
         {
-            Debug.Log("Finished fetching response files.");
+            Debug.LogWarning("No audio files found to play.");
         }
     }
 
-    // Coroutine to play an audio file
-    private IEnumerator PlayAudioFile(string filePath)
+    private void PlayAllFetchedAudio()
     {
-        using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + filePath, AudioType.WAV))
+        StartCoroutine(PlayQueuedAudio());
+    }
+
+    private IEnumerator PlayQueuedAudio()
+    {
+        while (audioFileQueue.Count > 0)
         {
-            yield return www.SendWebRequest();
+            string filePath = audioFileQueue.Dequeue();
+            Debug.Log("Attempting to load audio from: " + filePath);
 
-            if (www.result != UnityWebRequest.Result.Success)
-            {
-                Debug.LogError("Error playing audio file: " + www.error);
-            }
-            else
-            {
-                AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
-                audioSource.clip = clip;
-                audioSource.Play();
+            // Play from StreamingAssets
+            string fullPath = "file://" + filePath;  // Add file:// prefix for UnityWebRequest
+            Debug.Log("Full path: " + fullPath);
 
-                Debug.Log("Playing response audio...");
+            using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(fullPath, AudioType.WAV))
+            {
+                yield return www.SendWebRequest();
+
+                if (www.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.Log("Error loading audio file: " + www.error);
+                }
+                else
+                {
+                    AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
+                    if (clip == null)
+                    {
+                        Debug.LogError("Error: AudioClip is null for file: " + filePath);
+                    }
+                    else
+                    {
+                        audioSource.clip = clip;
+                        Debug.Log("AudioClip assigned. Length: " + clip.length);
+
+                        audioSource.Play();
+                        Debug.Log("Playing audio...");
+
+                        yield return new WaitForSeconds(clip.length);
+                    }
+                }
             }
         }
     }

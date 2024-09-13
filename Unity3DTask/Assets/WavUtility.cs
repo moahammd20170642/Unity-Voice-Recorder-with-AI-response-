@@ -108,4 +108,30 @@ public static class WavUtility
 
     }
 
+    // Method to load a WAV file and convert it to an AudioClip
+    public static AudioClip ToAudioClip(string filePath)
+    {
+        if (!File.Exists(filePath))
+        {
+            Debug.LogError("File not found: " + filePath);
+            return null;
+        }
+
+        byte[] wavFile = File.ReadAllBytes(filePath);
+
+        int channels = wavFile[22]; // NumChannels
+        int sampleRate = BitConverter.ToInt32(wavFile, 24); // SampleRate
+        int dataSize = BitConverter.ToInt32(wavFile, 40); // Subchunk2Size (data size)
+
+        float[] audioData = new float[dataSize / 2]; // Audio data (16-bit PCM -> 2 bytes per sample)
+        for (int i = 0; i < audioData.Length; i++)
+        {
+            audioData[i] = BitConverter.ToInt16(wavFile, HEADER_SIZE + i * 2) / 32768f; // Convert to float
+        }
+
+        AudioClip audioClip = AudioClip.Create("wavClip", audioData.Length, channels, sampleRate, false);
+        audioClip.SetData(audioData, 0);
+
+        return audioClip;
+    }
 }
