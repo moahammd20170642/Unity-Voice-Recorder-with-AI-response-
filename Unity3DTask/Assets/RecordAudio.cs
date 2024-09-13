@@ -15,7 +15,7 @@ public class RecordAudio : MonoBehaviour
     private float recordingLength;
     private bool isRecording = false;
     private float silenceDuration = 0f;
-    private const float silenceThreshold = 0.08f;
+    private const float silenceThreshold = 0.1f;
     private const float maxSilenceTime = 3f;
     private const int sampleWindow = 1024;
     private Queue<string> audioFileQueue = new Queue<string>();
@@ -240,7 +240,7 @@ public class RecordAudio : MonoBehaviour
             string fullPath = "file://" + filePath;  // Add file:// prefix for UnityWebRequest
             Debug.Log("Full path: " + fullPath);
 
-            using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(fullPath, AudioType.WAV))
+            using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(fullPath, AudioType.MPEG))
             {
                 yield return www.SendWebRequest();
 
