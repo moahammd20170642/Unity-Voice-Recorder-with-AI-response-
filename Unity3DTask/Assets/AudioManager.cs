@@ -13,6 +13,8 @@ public class AudioManager : MonoBehaviour
 
     [SerializeField] private AudioPlayer audioPlayer;
 
+    [SerializeField] private AnimatorController animatorController;
+
     private string directoryPath = "Recordings";
     private string serverUrl = "https://xfojojrxiv9w43-5000.proxy.runpod.net";
     private string filePath = "recording.wav";
@@ -43,15 +45,17 @@ public class AudioManager : MonoBehaviour
     public void StartRecording()
     {
         Debug.Log("Starting recording...");
-
+        animatorController.StartListening();
         // Start recording and set up silence detection.
         audioRecorder.StartRecording();
         audioRecorder.OnSilenceExceeded += StopRecording;
+
          Debug.Log("Recording started and waiting for silence detection.");
     }
 
     public void StopRecording()
     {
+        animatorController.SetIdle();
         Debug.Log("Stopping recording due to silence or user command...");
 
         // Stop recording and get the audio clip.
@@ -85,6 +89,7 @@ public class AudioManager : MonoBehaviour
         if (queuedFiles.Count > 0)
         {
             Debug.Log($"Playing {queuedFiles.Count} fetched audio file(s)...");
+            animatorController.gameObject.GetComponent<Animator>().enabled = false;
             StartCoroutine(audioPlayer.PlayQueuedAudio(queuedFiles));
         }
         else
