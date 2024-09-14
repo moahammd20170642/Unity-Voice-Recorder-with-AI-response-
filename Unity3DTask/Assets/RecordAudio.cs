@@ -15,7 +15,7 @@ public class RecordAudio : MonoBehaviour
     private float recordingLength;
     private bool isRecording = false;
     private float silenceDuration = 0f;
-    private const float silenceThreshold = 0.1f;
+    private const float silenceThreshold = 0.04f;
     private const float maxSilenceTime = 3f;
     private const int sampleWindow = 1024;
     private Queue<string> audioFileQueue = new Queue<string>();
