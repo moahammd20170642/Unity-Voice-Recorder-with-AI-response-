@@ -17,7 +17,14 @@ public class AudioSaver
     public void SaveAudio(string fileName, AudioClip clip)
     {
         string filePath = Path.Combine(directoryPath, fileName);
-        WavUtility.Save(filePath, clip);
+
+        // Convert the AudioClip to WAV bytes
+        string tempFilePath;
+        byte[] wavBytes = WavUtility.FromAudioClip(clip, out tempFilePath, true, Path.GetDirectoryName(filePath));
+
+        // Save the WAV bytes to the specified file path
+        File.WriteAllBytes(filePath, wavBytes);
+
         Debug.Log("Recording saved as " + filePath);
     }
 }
