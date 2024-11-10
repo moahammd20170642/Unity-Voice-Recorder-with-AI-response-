@@ -1,61 +1,77 @@
-Audio Manager System
-Overview
-The Audio Manager system is designed for managing audio recordings, uploading to a server, fetching response audio, and coordinating lip-sync animations with character animations in Unity. This system allows seamless interaction by automating audio recording, playback, and synchronization with the character’s animations.
 
-Key Features
-Automatic Silence Detection: Stops recording automatically when the user stops speaking for a specified duration.
-Audio Saving and Uploading: Saves recorded audio as a WAV file locally and uploads it to a server.
-Fetching Response Audio: Fetches multiple audio files from the server based on a unique session identifier (SSID).
-Queued Audio Playback: Sequential playback of fetched audio files, with the first two in WAV format and the rest in MP3.
-Lip-Sync Synchronization: Syncs the character’s lip movements with the audio playback, while maintaining other body animations.
-Stop Functionality: Allows stopping of the audio playback at any time, resets the system, and enables new audio recordings.
-UI Language Selection: Provides UI elements to select the user’s preferred language for interaction.
-System Components
-1. AudioManager
-The AudioManager class manages the recording, uploading, fetching, and playback of audio. It interfaces with the following components:
+# Unity Voice Recorder with AI Response
 
-AudioRecorder
-AudioSaver
-AudioUploader
-AudioFetcher
-AudioPlayer
-Additionally, it controls the character’s AnimatorController for animation handling.
+This Unity project demonstrates how to record voice, send it to an AI API for processing, and receive a response to be played back to the user. The system also handles audio playback and interaction with a Unity Animator for controlling animations during recording and response playback.
 
-2. AudioRecorder
-The AudioRecorder class handles audio recording from the microphone, detects silence, and stops recording when no speech is detected for a given period. It also trims recorded audio.
+## Features
+- **Voice Recording:** Capture audio from the user's microphone and save it as a WAV file.
+- **AI Response:** Send the recorded audio to an AI service for processing and get a text or audio response.
+- **Audio Playback:** Play back both the AI-generated response and the original audio using Unity's `AudioSource`.
+- **Lip-Sync Integration:** Optionally integrates with Unity's OVR Lip Sync for facial animations during speech.
+- **Animation Control:** Trigger animations during voice recording, AI response playback, and user interaction.
+- **Silence Detection:** Automatically stop recording when silence is detected, improving user experience.
 
-3. AudioSaver
-The AudioSaver class saves the recorded audio as a WAV file locally.
+## Requirements
+- Unity 2020.3 or later.
+- Any microphone input for voice recording.
+- An AI service or API to handle the speech processing (e.g., OpenAI, Google Speech API, etc.).
 
-4. AudioUploader
-The AudioUploader class uploads the saved WAV file to the server. It receives a session identifier (SSID) after the upload, which is used to fetch response audio.
+## Setup
 
-5. AudioFetcher
-The AudioFetcher class fetches response audio files from the server using the SSID. It queues them for sequential playback.
+1. Clone the repository:
 
-6. AudioPlayer
-The AudioPlayer class plays the audio files from the queue. It distinguishes between WAV and MP3 formats and uses Unity's AudioSource for playback. Lip-sync animations are synchronized during playback.
+   ```bash
+   git clone https://github.com/moahammd20170642/Unity-Voice-Recorder-with-AI-response
+   ```
 
-7. AnimatorController
-The AnimatorController class manages the character’s animation states. It switches between idle, listening, and a custom coffee animation, and ensures lip-syncing remains active during audio playback without affecting body animations.
+2. Open the project in Unity.
 
-Installation
-Clone this repository:
+3. Set up the necessary AI API in the script where the recording is sent for processing. You can use services like OpenAI or Google Cloud Speech-to-Text.
 
-bash
-Copy code
-git clone https://github.com/your-username/audio-manager-system.git
-Import into Unity and attach the necessary components to your character and scene.
+4. Attach the required scripts to your Unity objects (such as the `AudioSource`, `Animator`, and `LipSync` components).
 
-Configure the server URLs for audio uploading and fetching in the AudioUploader and AudioFetcher scripts.
+5. Customize the Animator Controller to include animations like "Idle," "Listen," and "Response" based on your use case.
 
-Ensure your Unity project has the necessary assets for animations and lip-sync.
+6. Configure the microphone input and recording button in the Unity UI.
 
-Usage
-Trigger recording via a button in the UI.
-Audio is automatically uploaded to the server after recording.
-Response audio is fetched and played sequentially.
-The character’s lips will sync with the audio during playback.
-Contributing
-Feel free to fork this project, create a branch for new features or fixes, and submit pull requests. Please ensure your code adheres to the existing style and includes tests where applicable.
+## Usage
 
+- **Record:** Press the "Record" button to start recording the user's voice.
+- **Stop:** Press the "Stop" button to stop recording and send the audio for processing.
+- **Play Response:** Once the AI response is received, it will automatically be played back to the user.
+- **Lip Sync:** If lip sync is enabled, the character will perform facial animations during the AI response playback.
+
+## Example Code Snippets
+
+### Voice Recording
+
+```csharp
+void StartRecording()
+{
+    // Start recording logic here
+}
+
+void StopRecording()
+{
+    // Stop recording and process the audio
+}
+```
+
+### AI Response Handling
+
+```csharp
+void ProcessAudioAndGetResponse(AudioClip recordedClip)
+{
+    // Send audio to AI API and handle the response
+}
+```
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [Unity](https://unity.com/) for the game development engine.
+- [OpenAI](https://openai.com/) for the AI language model.
+- [Google Cloud Speech-to-Text](https://cloud.google.com/speech-to-text) for speech recognition services.
